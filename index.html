@@ -43,6 +43,8 @@ main.wrap{padding-bottom:140px}
 .qty button:first-child{border-radius:10px 0 0 10px}.qty button:last-child{border-radius:0 10px 10px 0}
 .qty input{flex:1;min-width:0;height:38px;text-align:center;border:1px solid var(--line);border-left:0;border-right:0;font:inherit;font-weight:600}
 .qty.na button,.qty.na input{opacity:.4;pointer-events:none}
+.itemsHead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 8px 12px}
+.itemsHead .btn{padding:9px 16px;border-color:var(--pink);color:var(--pink)}
 .rq{margin:0 0 0 auto;width:112px}.rq button{width:32px;height:34px;font-size:18px}.rq input{height:34px;width:44px;flex:none}
 .tabs{position:sticky;top:0;z-index:5;background:#fff;display:flex;gap:8px;overflow-x:auto;padding:10px 14px;margin:0 -14px 14px;border-bottom:1px solid var(--line);scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
@@ -135,6 +137,7 @@ label{display:block;font-weight:600;margin:12px 0 4px}
     <div class="deal hide pcol" id="dealMsg"></div>
     <div class="pcol" id="sumHint" style="text-align:center;font-weight:700;margin:-6px 0 12px;color:#b45f00"></div>
     <div class="box tw">
+      <div class="itemsHead"><strong>Items</strong><button class="btn ghost" id="back">+ Add / edit items</button></div>
       <table>
         <thead><tr><th>Item</th><th class="r pcol">Price</th><th class="r">Qty</th><th class="r pcol">Amount</th></tr></thead>
         <tbody id="rows"></tbody>
@@ -153,7 +156,6 @@ label{display:block;font-weight:600;margin:12px 0 4px}
       <label class="adv" for="adv2"><input type="checkbox" id="adv2"><span>I will share the advance payment screenshot in the group.<small>Please share the advance payment screenshot in the group after you pay. Your order is confirmed only after we receive it.</small></span></label>
       <div class="err" id="err" role="alert"></div>
       <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">
-        <button class="btn ghost" id="back">Edit items</button>
         <button class="btn" id="submit">Place order</button>
       </div>
       <p class="note" id="note"></p>
@@ -223,10 +225,11 @@ function guessCat(name){
   if (/gift/.test(n)) return "Gift Boxes";
   if (/sparkler/.test(n)) return "Sparklers";
   if (/crackling/.test(n)) return "Crackling";
+  if (/smoke|fog/.test(n)) return "Smoke and Fog";
   if (/fountain|tri ?colou?r|shower/.test(n)) return "Fountains";
   if (/wheel|chakkar|spinner/.test(n)) return "Wheels";
   if (/flower ?pot|koti|\bpots?\b/.test(n)) return "Flower Pots";
-  return "Miscellaneous";
+  return "Fancy Item";
 }
 
 async function load(){
@@ -268,8 +271,8 @@ function renderGrid(){
 }
 
 let TAB = "All";
-const CAT_ORDER = (typeof CATEGORIES !== "undefined" && CATEGORIES.length) ? CATEGORIES : ["Sparklers","Flower Pots","Skyshots","Bombs","Wheels","Fountains","Rockets","Crackling","Gift Boxes","Miscellaneous"];
-function canon(c){ c = (c || "Miscellaneous").trim(); if (c.toLowerCase() === "others") c = "Miscellaneous"; const f = CAT_ORDER.find(x => x.toLowerCase() === c.toLowerCase()); return f || c; }
+const CAT_ORDER = (typeof CATEGORIES !== "undefined" && CATEGORIES.length) ? CATEGORIES : ["Sparklers","Flower Pots","Skyshots","Bombs","Wheels","Fountains","Rockets","Crackling","Gift Boxes","Smoke and Fog","Fancy Item"];
+function canon(c){ c = (c || "Fancy Item").trim(); if (["others","miscellaneous"].includes(c.toLowerCase())) c = "Fancy Item"; const f = CAT_ORDER.find(x => x.toLowerCase() === c.toLowerCase()); return f || c; }
 
 function renderTabs(){
   PRODUCTS.forEach(p => p.category = canon(p.category));
