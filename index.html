@@ -51,7 +51,13 @@ main.wrap{padding-bottom:140px}
 .tab{flex:none;border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer;color:var(--ink);white-space:nowrap}
 .tab small{opacity:.65;font-weight:400;margin-left:4px}
 .tab[aria-pressed=true]{background:var(--night);color:#fff;border-color:var(--night)}
-@media(min-width:700px){.tabs{flex-wrap:wrap;overflow:visible}}
+/* wider screens: categories as a list on the LEFT side; phones keep the swipe row on top */
+@media(min-width:700px){
+  .shopLayout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:18px;align-items:start}
+  .tabs{position:sticky;top:12px;flex-direction:column;flex-wrap:nowrap;overflow-x:hidden;overflow-y:auto;max-height:calc(100vh - 110px);margin:0;padding:8px;gap:4px;border:1px solid var(--line);border-radius:14px;background:#fff}
+  .tab{display:flex;justify-content:space-between;align-items:center;border:0;border-radius:10px;padding:10px 12px;text-align:left;white-space:normal}
+  .tab small{margin-left:8px}
+}
 .empty{text-align:center;color:var(--mute);padding:30px 0}
 .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 0;padding-bottom:max(10px,env(safe-area-inset-bottom))}
 .bar .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -125,10 +131,14 @@ label{display:block;font-weight:600;margin:12px 0 4px}
       <input id="search" type="search" placeholder="Search crackers" aria-label="Search crackers">
       <span id="shown"></span>
     </div>
-    <div class="tabs" id="tabs" role="group" aria-label="Categories"></div>
-    <div class="grid" id="grid"></div>
-    <p class="empty hide" id="empty">No items found.</p>
-    <p class="note" id="loadErr"></p>
+    <div class="shopLayout" id="layout">
+      <div class="tabs" id="tabs" role="group" aria-label="Categories"></div>
+      <div class="shopMain">
+        <div class="grid" id="grid"></div>
+        <p class="empty hide" id="empty">No items found.</p>
+        <p class="note" id="loadErr"></p>
+      </div>
+    </div>
   </section>
 
   <!-- Page 2: order summary -->
@@ -298,7 +308,7 @@ $("search").addEventListener("input", () => {
 $("tabs").addEventListener("click", e => {
   const b = e.target.closest(".tab"); if (!b) return;
   TAB = b.dataset.c; $("search").value = ""; renderTabs(); filter();
-  window.scrollTo({top: Math.max(0, $("tabs").offsetTop - 4)});
+  window.scrollTo({top: Math.max(0, $("layout").offsetTop - 4)});
 });
 
 function setQty(id, v){
