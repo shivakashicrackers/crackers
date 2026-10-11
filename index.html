@@ -12,6 +12,9 @@
 body{margin:0;background:#fff;color:var(--ink);font-family:Figtree,system-ui,sans-serif;line-height:1.45}
 h1,h2,h3{font-family:"Bricolage Grotesque",Figtree,sans-serif;margin:0}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+/* animation over the header: rockets going up + sparks */
+.hero{position:relative;line-height:0}
+.hero canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 /* header image size: 100% = full width. Change this one number to resize it (e.g. 90%) */
 .banner{display:block;width:100%;height:auto;margin:0 auto}
 .notice{background:#fff6dc;border-bottom:3px solid var(--gold);color:#4a3b00;text-align:center;padding:12px 16px;font-size:14px;line-height:1.55}
@@ -40,6 +43,7 @@ main.wrap{padding-bottom:140px}
 .qty button:first-child{border-radius:10px 0 0 10px}.qty button:last-child{border-radius:0 10px 10px 0}
 .qty input{flex:1;min-width:0;height:38px;text-align:center;border:1px solid var(--line);border-left:0;border-right:0;font:inherit;font-weight:600}
 .qty.na button,.qty.na input{opacity:.4;pointer-events:none}
+.rq{margin:0 0 0 auto;width:112px}.rq button{width:32px;height:34px;font-size:18px}.rq input{height:34px;width:44px;flex:none}
 .tabs{position:sticky;top:0;z-index:5;background:#fff;display:flex;gap:8px;overflow-x:auto;padding:10px 14px;margin:0 -14px 14px;border-bottom:1px solid var(--line);scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{flex:none;border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer;color:var(--ink);white-space:nowrap}
@@ -100,7 +104,7 @@ label{display:block;font-weight:600;margin:12px 0 4px}
 </head>
 <body>
 <h1 class="vh">Shivakashi Crackers</h1>
-<img class="banner" src="banner.jpg" alt="Shivakashi Crackers">
+<div class="hero"><img class="banner" src="banner.jpg" alt="Shivakashi Crackers"><canvas id="fx" aria-hidden="true"></canvas></div>
 <div class="offer" role="note" aria-label="Bulk order offers">
   <h2>BULK ORDER OFFERS</h2>
   <div class="tiers">
@@ -129,6 +133,7 @@ label{display:block;font-weight:600;margin:12px 0 4px}
   <section id="summary" class="hide pad">
     <h2 style="margin-bottom:14px">Your order</h2>
     <div class="deal hide pcol" id="dealMsg"></div>
+    <div class="pcol" id="sumHint" style="text-align:center;font-weight:700;margin:-6px 0 12px;color:#b45f00"></div>
     <div class="box tw">
       <table>
         <thead><tr><th>Item</th><th class="r pcol">Price</th><th class="r">Qty</th><th class="r pcol">Amount</th></tr></thead>
@@ -345,22 +350,36 @@ function show(page){
   window.scrollTo(0, 0);
 }
 
-$("review").onclick = () => {
+function renderSummary(){
   const t = totals();
-  $("rows").innerHTML = items().map(p => `<tr><td>${esc(label(p))}</td><td class="r pcol">${rs(p.price)}</td><td class="r">${cart[p.id]}</td><td class="r pcol">${rs(p.price * cart[p.id])}</td></tr>`).join("");
+  $("rows").innerHTML = items().map(p => `<tr><td>${esc(label(p))}</td><td class="r pcol">${rs(p.price)}</td>
+    <td class="r"><div class="qty rq"><button aria-label="Remove one" data-d="-1" data-id="${esc(p.id)}">−</button><input aria-label="Quantity of ${esc(label(p))}" type="number" min="0" value="${cart[p.id]}" data-id="${esc(p.id)}"><button aria-label="Add one" data-d="1" data-id="${esc(p.id)}">+</button></div></td>
+    <td class="r pcol">${rs(p.price * cart[p.id])}</td></tr>`).join("");
   $("foot").innerHTML =
     `<tr class="tot pcol"><td colspan="3" class="r">Total at real price</td><td class="r old">${rs(t.mrp)}</td></tr>
      <tr class="tot pcol"><td colspan="3" class="r">Total at offer price</td><td class="r">${rs(t.base)}</td></tr>` +
     (t.tier ? `<tr class="tot save pcol"><td colspan="3" class="r">Bulk offer: ${t.tierName}</td><td class="r">− ${rs(t.offer)}</td></tr>` : "") +
     `<tr class="tot save pcol"><td colspan="3" class="r">You save</td><td class="r">${rs(t.save)}</td></tr>
      <tr class="tot pcol"><td colspan="3" class="r">Amount to pay</td><td class="r" style="font-size:20px">${rs(t.pay)}</td></tr>`;
-  $("note").textContent = URL_SET ? "" : "Test mode: no Google Sheet link set yet, so the order will be saved in this browser and downloaded as a CSV file.";
-  $("err").textContent = "";
-  $("adv").checked = false; $("adv2").checked = false; $("advAmt").textContent = rs(Math.round(t.pay * 0.1));
+  $("advAmt").textContent = rs(Math.round(t.pay * 0.1));
   const dm = $("dealMsg"); dm.classList.toggle("hide", !t.tier);
   dm.textContent = t.tier ? "🎉 " + t.tierName + " applied - you save " + rs(t.save) + " on this order" : "";
-  show("summary");
+  const hn = nextHint(t); $("sumHint").textContent = t.tier === 3 ? "" : hn;
+}
+$("review").onclick = () => {
+  $("note").textContent = URL_SET ? "" : "Test mode: no Google Sheet link set yet, so the order will be saved in this browser and downloaded as a CSV file.";
+  $("err").textContent = "";
+  $("adv").checked = false; $("adv2").checked = false;
+  renderSummary(); show("summary");
 };
+/* change quantities right on the review page */
+function sumQty(id, v){
+  setQty(id, v);                       // also updates the shop page + offer highlight
+  if (!items().length) { show("shop"); return; }   // everything removed -> back to shopping
+  renderSummary();
+}
+$("rows").addEventListener("click", e => { const b = e.target.closest("button"); if (b) sumQty(b.dataset.id, (cart[b.dataset.id] || 0) + +b.dataset.d); });
+$("rows").addEventListener("change", e => { if (e.target.dataset.id) sumQty(e.target.dataset.id, e.target.value); });
 $("back").onclick = () => show("shop");
 $("again").onclick = () => { for (const k in cart) cart[k] = 0; renderGrid(); updateBar(); ["name","phone","addr"].forEach(i => $(i).value = ""); $("adv").checked = false; show("shop"); };
 
@@ -402,6 +421,59 @@ function saveLocally(o){
   a.href = URL.createObjectURL(new Blob(["\ufeff" + csv], {type:"text/csv"}));
   a.download = o.orderId + ".csv"; a.click();
 }
+
+/* ---- banner fireworks: rockets that go up and burst, plus rising sparks ----
+   mode: "rockets" | "embers" | "both" | "none"                                */
+function bannerFX(canvas, mode){
+  if (!canvas || mode === "none") return;
+  const ctx = canvas.getContext("2d"), COL = ["#ffd400","#ff3d71","#00e5ff","#7CFF4F","#ff9100","#ffffff","#d500f9"];
+  let W = 0, H = 0, rockets = [], parts = [], last = performance.now(), nextR = 0;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  function size(){
+    const r = canvas.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    W = r.width; H = r.height; canvas.width = W * d; canvas.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0);
+  }
+  size(); window.addEventListener("resize", size);
+  const useR = mode === "rockets" || mode === "both", useE = mode === "embers" || mode === "both";
+  function burst(x, y, c){
+    const n = 46;
+    for (let i = 0; i < n; i++){
+      const a = (i / n) * Math.PI * 2 + rnd(-.1, .1), s = rnd(1.2, 3.6) * (H / 400 + .5);
+      parts.push({x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, dec: rnd(.012, .022), g: .035, r: rnd(1.2, 2.4), c});
+    }
+  }
+  function frame(now){
+    const k = Math.min(3, (now - last) / 16.67); last = now;
+    ctx.clearRect(0, 0, W, H); ctx.globalCompositeOperation = "lighter";
+    if (useR && now > nextR){
+      rockets.push({x: rnd(W * .06, W * .94), y: H + 6, ty: rnd(H * .12, H * .55), v: rnd(.011, .016) * H, c: COL[(Math.random() * COL.length) | 0]});
+      nextR = now + rnd(350, 900);
+    }
+    if (useE && Math.random() < .5 * k)
+      parts.push({x: rnd(0, W), y: H + 4, vx: rnd(-.3, .3), vy: -rnd(.8, 2.2), life: 1, dec: rnd(.004, .009), g: 0, r: rnd(1, 2.2), c: COL[(Math.random() * COL.length) | 0], ember: 1});
+    rockets = rockets.filter(r => {
+      r.y -= r.v * k;
+      parts.push({x: r.x + rnd(-1, 1), y: r.y + 4, vx: rnd(-.2, .2), vy: rnd(.3, 1), life: .8, dec: .06, g: 0, r: 1.6, c: "#ffb74d"});
+      ctx.fillStyle = "#fff"; ctx.shadowBlur = 12; ctx.shadowColor = r.c;
+      ctx.beginPath(); ctx.arc(r.x, r.y, 2.6, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
+      if (r.y <= r.ty){ burst(r.x, r.y, r.c); return false; }
+      return true;
+    });
+    parts = parts.filter(p => {
+      p.x += p.vx * k; p.y += p.vy * k; p.vy += p.g * k; if (p.ember) p.x += Math.sin(p.y / 18) * .3;
+      p.life -= p.dec * k; if (p.life <= 0) return false;
+      ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.c;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); return true;
+    });
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* header animation: "rockets" | "embers" | "both" | "none" */
+const BANNER_FX = "both";
+bannerFX($("fx"), BANNER_FX);
 
 updateBar(); load();
 </script>
