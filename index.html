@@ -89,7 +89,7 @@ label{display:block;font-weight:600;margin:12px 0 4px}
 .pad{padding-top:18px}
 .offer{position:relative;overflow:hidden;background:linear-gradient(90deg,#e10600,#ff6a00,#e10600);background-size:200% 100%;color:#fff;padding:12px;text-align:center;animation:flow 4s linear infinite;border-top:3px solid #ffe600;border-bottom:3px solid #ffe600}
 .offer::after{content:"";position:absolute;top:0;left:-50%;width:30%;height:100%;pointer-events:none;background:linear-gradient(100deg,transparent,rgba(255,255,255,.85),transparent);transform:skewX(-20deg);animation:shine 2.2s ease-in-out infinite}
-.offer h2{font-size:18px;margin:0 0 8px;color:#ffee00;text-shadow:0 1px 2px rgba(0,0,0,.4);animation:blink .9s ease-in-out infinite}
+.offer h2{font-size:24px;letter-spacing:1px;margin:0;margin:0 0 8px;color:#ffee00;text-shadow:0 1px 2px rgba(0,0,0,.4);animation:blink .9s ease-in-out infinite}
 .tiers{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;max-width:1100px;margin:0 auto}
 .tier{background:#ffee00;color:#1a1a1a;border:2px solid #fff;border-radius:10px;padding:6px 12px;font-size:14px;font-weight:600;line-height:1.3;animation:glow .9s ease-in-out infinite}
 .tier b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:18px;color:#d50000}
@@ -111,25 +111,13 @@ label{display:block;font-weight:600;margin:12px 0 4px}
 .adv input{width:22px;height:22px;margin-top:2px;flex:none;accent-color:#d3226b}
 .adv small{display:block;font-weight:400;color:var(--mute);margin-top:2px}
 .noprice .price,.noprice .pcol{display:none!important}
-  #back.btn {
-  background: #4fc3f7;
-  color: #06283d;
-  border: 2px solid #4fc3f7;
-  box-shadow: 0 2px 8px rgba(79, 195, 247, .45);
-}
-#back.btn:hover { background: #29b6f6; border-color: #29b6f6; }
 </style>
 </head>
 <body>
 <h1 class="vh">Shivakashi Crackers</h1>
 <div class="hero"><img class="banner" src="banner.jpg" alt="Shivakashi Crackers"><canvas id="fx" aria-hidden="true"></canvas></div>
-<div class="offer" role="note" aria-label="Bulk order offers">
-  <h2>BULK ORDER OFFERS</h2>
-  <div class="tiers">
-    <div class="tier" id="t1">Order ₹5,000 or more<b>Extra 10% OFF</b></div>
-    <div class="tier" id="t2">Order ₹10,000 or more<b>Extra 20% OFF</b></div>
-    <div class="tier" id="t3">Order above ₹20,000<b>FLAT 85% OFF</b></div>
-  </div>
+<div class="offer" role="note" aria-label="Offer">
+  <h2>FLAT 85% OFF</h2>
 </div>
 
 <div class="notice"><p>We facilitate bulk orders to secure better pricing. End-to-end service is handled by the provider, while we take responsibility for ensuring your order is delivered safely and on time to your doorstep.</p></div>
@@ -155,7 +143,6 @@ label{display:block;font-weight:600;margin:12px 0 4px}
   <section id="summary" class="hide pad">
     <h2 style="margin-bottom:14px">Your order</h2>
     <div class="deal hide pcol" id="dealMsg"></div>
-    <div class="pcol" id="sumHint" style="text-align:center;font-weight:700;margin:-6px 0 12px;color:#b45f00"></div>
     <div class="box tw">
       <div class="itemsHead"><strong>Items</strong><button class="btn ghost" id="back">+ Add / edit items</button></div>
       <table>
@@ -199,7 +186,7 @@ label{display:block;font-weight:600;margin:12px 0 4px}
 </main>
 
 <div class="bar" id="bar"><div class="wrap">
-  <div><strong id="count">0 items</strong><br><span id="barTotal" style="color:var(--mute)">₹0</span><br><span id="hint"></span></div>
+  <div><strong id="count">0 items</strong><br><span id="barTotal" style="color:var(--mute)">₹0</span></div>
   <button class="btn" id="review" disabled>Review order</button>
 </div></div>
 
@@ -330,35 +317,16 @@ function setQty(id, v){
   v = Math.max(0, Math.min(999, parseInt(v) || 0));
   cart[id] = v; const el = $("q-" + id); if (el) el.value = v; updateBar();
 }
-/* ---- bulk offers (edit here) ----
-   Order value = cart total at the normal listed price (already 80% off MRP).
-   5,000 or more  -> extra 10% off that total
-   10,000 or more -> extra 20% off that total
-   above 20,000   -> flat 85% off MRP                                        */
-const T1_MIN = 5000, T2_MIN = 10000, T3_OVER = 20000;
+/* Flat 85% off: every product price in products.csv is already MRP x 15%. */
 function totals(){
   let mrp = 0, base = 0, n = 0;
   items().forEach(p => { const q = cart[p.id]; mrp += p.mrp * q; base += p.price * q; n += q; });
-  let tier = 0, pay = base;
-  if (base > T3_OVER){ tier = 3; pay = Math.min(base, Math.round(mrp * 0.15)); }
-  else if (base >= T2_MIN){ tier = 2; pay = Math.round(base * 0.8); }
-  else if (base >= T1_MIN){ tier = 1; pay = Math.round(base * 0.9); }
-  const tierName = ["", "Extra 10% off", "Extra 20% off", "Flat 85% off"][tier];
-  return {mrp, base, pay, n, tier, tierName, offer: base - pay, save: mrp - pay};
-}
-function nextHint(t){
-  if (t.tier === 3) return "Best offer applied: Flat 85% off";
-  const next = t.base < T1_MIN ? [T1_MIN, "extra 10% off"] : t.base < T2_MIN ? [T2_MIN, "extra 20% off"] : [T3_OVER + 1, "flat 85% off"];
-  const head = t.tier ? t.tierName + " applied. " : "";
-  return t.n ? head + "Add " + rs(Math.ceil(next[0] - t.base)) + " more for " + next[1] : "";
+  return {mrp, base, pay: base, n, save: mrp - base};
 }
 function updateBar(){
   const t = totals();
   $("count").textContent = t.n + (t.n === 1 ? " item" : " items");
   $("barTotal").textContent = SHOW_PRICES ? rs(t.pay) + (t.save ? " · you save " + rs(t.save) : "") : "";
-  $("hint").textContent = nextHint(t);
-  $("hint").className = !t.n ? "" : t.tier ? "has" : "nudge";
-  [1,2,3].forEach(k => $("t" + k).classList.toggle("on", t.tier === k));
   $("review").disabled = t.n === 0;
 }
 
@@ -384,15 +352,12 @@ function renderSummary(){
     <td class="r"><div class="qty rq"><button aria-label="Remove one" data-d="-1" data-id="${esc(p.id)}">−</button><input aria-label="Quantity of ${esc(label(p))}" type="number" min="0" value="${cart[p.id]}" data-id="${esc(p.id)}"><button aria-label="Add one" data-d="1" data-id="${esc(p.id)}">+</button></div></td>
     <td class="r pcol">${rs(p.price * cart[p.id])}</td></tr>`).join("");
   $("foot").innerHTML =
-    `<tr class="tot pcol"><td colspan="3" class="r">Total at real price</td><td class="r old">${rs(t.mrp)}</td></tr>
-     <tr class="tot pcol"><td colspan="3" class="r">Total at offer price</td><td class="r">${rs(t.base)}</td></tr>` +
-    (t.tier ? `<tr class="tot save pcol"><td colspan="3" class="r">Bulk offer: ${t.tierName}</td><td class="r">− ${rs(t.offer)}</td></tr>` : "") +
+    `<tr class="tot pcol"><td colspan="3" class="r">Total at real price</td><td class="r old">${rs(t.mrp)}</td></tr>` +
     `<tr class="tot save pcol"><td colspan="3" class="r">You save</td><td class="r">${rs(t.save)}</td></tr>
      <tr class="tot pcol"><td colspan="3" class="r">Amount to pay</td><td class="r" style="font-size:20px">${rs(t.pay)}</td></tr>`;
   $("advAmt").textContent = rs(Math.round(t.pay * 0.1));
-  const dm = $("dealMsg"); dm.classList.toggle("hide", !t.tier);
-  dm.textContent = t.tier ? "🎉 " + t.tierName + " applied - you save " + rs(t.save) + " on this order" : "";
-  const hn = nextHint(t); $("sumHint").textContent = t.tier === 3 ? "" : hn;
+  const dm = $("dealMsg"); dm.classList.toggle("hide", !t.n);
+  dm.textContent = "🎉 Flat 85% off applied - you save " + rs(t.save) + " on this order";
 }
 $("review").onclick = () => {
   $("note").textContent = URL_SET ? "" : "Test mode: no Google Sheet link set yet, so the order will be saved in this browser and downloaded as a CSV file.";
@@ -425,7 +390,7 @@ $("submit").onclick = async () => {
     time: new Date().toLocaleString("en-IN"),
     name, phone, address: addr,
     items: items().map(p => `${label(p)} [${p.id}] x ${cart[p.id]} @ ${p.price}`).join("\n"),
-    total: t.pay, saved: t.save, advance: Math.round(t.pay * 0.1), offer: t.tierName
+    total: t.pay, saved: t.save, advance: Math.round(t.pay * 0.1), offer: "Flat 85% off"
   };
 
   const btn = $("submit"); btn.disabled = true; btn.textContent = "Placing order…"; $("err").textContent = "";
