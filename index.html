@@ -117,7 +117,8 @@ label{display:block;font-weight:600;margin:12px 0 4px}
 <h1 class="vh">Shivakashi Crackers</h1>
 <div class="hero"><img class="banner" src="banner.jpg" alt="Shivakashi Crackers"><canvas id="fx" aria-hidden="true"></canvas></div>
 <div class="offer" role="note" aria-label="Offer">
-  <h2>FLAT 85% OFF</h2>
+  <h2>UP TO 95% OFF</h2>
+  <span id="hint" aria-live="polite"></span>
 </div>
 
 <div class="notice"><p>We facilitate bulk orders to secure better pricing. End-to-end service is handled by the provider, while we take responsibility for ensuring your order is delivered safely and on time to your doorstep.</p></div>
@@ -224,7 +225,7 @@ function parseCSV(t){
   return rows.filter(r => r.some(x => x.trim())).map(r => {
     const o = {}; head.forEach((h, i) => o[h] = (r[i] || "").trim());
     const price = parseFloat(o.price) || 0, mrp = parseFloat(o.mrp) || 0;
-    return {id:o.id, image:o.image, name:o.name, pack:o.pack, category:o.category || guessCat(o.name), price, mrp: mrp || price};
+    return {id:o.id, image:o.image, name:o.name, pack:o.pack, category:o.category || guessCat(o.name), price, mrp: mrp || price, disc: parseFloat(o.discount) || 0};
   });
 }
 
@@ -265,7 +266,7 @@ async function load(){
 
 function renderGrid(){
   $("grid").innerHTML = PRODUCTS.map(p => {
-    const ok = p.price > 0, pct = Math.round((1 - p.price / p.mrp) * 100);
+    const ok = p.price > 0, pct = p.disc > 0 ? p.disc : Math.round((1 - p.price / p.mrp) * 100);  // discount column in products.csv wins; else worked out from mrp and price
     const priceHtml = !ok ? '<span class="nop">Price coming soon</span>'
       : `<span class="new">${rs(p.price)}</span>` + (p.mrp > p.price ? `<span class="old">${rs(p.mrp)}</span><span class="off">${pct}% off</span>` : "");
     return `<article class="p" data-cat="${esc(p.category)}" data-s="${esc((label(p) + " " + p.id).toLowerCase())}">
@@ -317,7 +318,7 @@ function setQty(id, v){
   v = Math.max(0, Math.min(999, parseInt(v) || 0));
   cart[id] = v; const el = $("q-" + id); if (el) el.value = v; updateBar();
 }
-/* Flat 85% off: every product price in products.csv is already MRP x 15%. */
+/* Each product has its own discount (up to 95% off); price in products.csv is already the final selling price. */
 function totals(){
   let mrp = 0, base = 0, n = 0;
   items().forEach(p => { const q = cart[p.id]; mrp += p.mrp * q; base += p.price * q; n += q; });
@@ -328,6 +329,10 @@ function updateBar(){
   $("count").textContent = t.n + (t.n === 1 ? " item" : " items");
   $("barTotal").textContent = SHOW_PRICES ? rs(t.pay) + (t.save ? " · you save " + rs(t.save) : "") : "";
   $("review").disabled = t.n === 0;
+  // current discount on the items in the cart (rounded down so it is never overstated)
+  const pct = t.mrp > 0 ? Math.floor(Math.round(t.save / t.mrp * 100 * 1e6) / 1e6) : 0;
+  $("hint").textContent = (SHOW_PRICES && t.n && pct > 0) ? "Your current discount: " + pct + "% off" : "";
+  $("hint").className = $("hint").textContent ? "has" : "";
 }
 
 $("grid").addEventListener("click", e => {
@@ -357,7 +362,7 @@ function renderSummary(){
      <tr class="tot pcol"><td colspan="3" class="r">Amount to pay</td><td class="r" style="font-size:20px">${rs(t.pay)}</td></tr>`;
   $("advAmt").textContent = rs(Math.round(t.pay * 0.1));
   const dm = $("dealMsg"); dm.classList.toggle("hide", !t.n);
-  dm.textContent = "🎉 Flat 85% off applied - you save " + rs(t.save) + " on this order";
+  dm.textContent = "🎉 " + (t.mrp > 0 ? Math.floor(Math.round(t.save / t.mrp * 100 * 1e6) / 1e6) : 0) + "% off applied - you save " + rs(t.save) + " on this order";
 }
 $("review").onclick = () => {
   $("note").textContent = URL_SET ? "" : "Test mode: no Google Sheet link set yet, so the order will be saved in this browser and downloaded as a CSV file.";
@@ -390,7 +395,7 @@ $("submit").onclick = async () => {
     time: new Date().toLocaleString("en-IN"),
     name, phone, address: addr,
     items: items().map(p => `${label(p)} [${p.id}] x ${cart[p.id]} @ ${p.price}`).join("\n"),
-    total: t.pay, saved: t.save, advance: Math.round(t.pay * 0.1), offer: "Flat 85% off"
+    total: t.pay, saved: t.save, advance: Math.round(t.pay * 0.1), offer: "Up to 95% off"
   };
 
   const btn = $("submit"); btn.disabled = true; btn.textContent = "Placing order…"; $("err").textContent = "";
