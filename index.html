@@ -86,6 +86,8 @@ label{display:block;font-weight:600;margin:12px 0 4px}
 .ok{text-align:center;padding:36px 10px}
 .lb{position:fixed;inset:0;background:rgba(10,10,30,.85);display:flex;align-items:center;justify-content:center;z-index:9;padding:16px}
 .lb img{max-width:100%;max-height:100%;border-radius:10px}
+.lb p{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));margin:0;text-align:center;color:#fff;font-size:13px;text-shadow:0 1px 3px #000}
+.disc{font-size:12.5px;color:var(--mute);margin:-6px 0 12px}
 .pad{padding-top:18px}
 .offer{position:relative;overflow:hidden;background:linear-gradient(90deg,#e10600,#ff6a00,#e10600);background-size:200% 100%;color:#fff;padding:12px;text-align:center;animation:flow 4s linear infinite;border-top:3px solid #ffe600;border-bottom:3px solid #ffe600}
 .offer::after{content:"";position:absolute;top:0;left:-50%;width:30%;height:100%;pointer-events:none;background:linear-gradient(100deg,transparent,rgba(255,255,255,.85),transparent);transform:skewX(-20deg);animation:shine 2.2s ease-in-out infinite}
@@ -130,6 +132,7 @@ label{display:block;font-weight:600;margin:12px 0 4px}
       <input id="search" type="search" placeholder="Search crackers" aria-label="Search crackers">
       <span id="shown"></span>
     </div>
+    <p class="disc">Disclaimer: Product may vary from the image shown.</p>
     <div class="shopLayout" id="layout">
       <div class="tabs" id="tabs" role="group" aria-label="Categories"></div>
       <div class="shopMain">
@@ -191,7 +194,7 @@ label{display:block;font-weight:600;margin:12px 0 4px}
   <button class="btn" id="review" disabled>Review order</button>
 </div></div>
 
-<div class="lb hide" id="lb"><img alt=""></div>
+<div class="lb hide" id="lb"><img alt=""><p>Product may vary from the image shown</p></div>
 
 <script src="config.js"></script>
 <script>
@@ -255,9 +258,9 @@ async function load(){
       if (!r.ok) throw 0;
       const list = parseCSV(await r.text());
       if (!list.length || !list[0].name) throw 0;
-      // products with a photo first, those without a photo last (keeps CSV order inside each group)
+      // cheapest first in every tab; products without a price go last (CSV order breaks ties)
       list.forEach((p, i) => p._i = i);
-      list.sort((x, y) => (!x.image - !y.image) || (x._i - y._i));
+      list.sort((x, y) => ((x.price > 0) !== (y.price > 0) ? (x.price > 0 ? -1 : 1) : 0) || (x.price - y.price) || (x._i - y._i));
       PRODUCTS = list; renderGrid(); return;
     }catch(e){}
   }
