@@ -204,7 +204,7 @@ const URL_SET = typeof SHEET_URL !== "undefined" && SHEET_URL;
 /* ---- show / hide prices ----
    Change this one line:  true = show prices,  false = hide prices */
 const SHOW_PRICES = true;
-const MIN_ORDER = 1000;   // minimum order value in rupees (checked on the review page and again on Place order)
+const MIN_ORDER = 0;   // minimum order value in rupees (checked on the review page and again on Place order)
 document.body.classList.toggle("noprice", !SHOW_PRICES);
 let PRODUCTS = [];
 const cart = {};
