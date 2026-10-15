@@ -36,9 +36,12 @@ button{font-family:inherit}
 .badge{position:absolute;top:-4px;right:-7px;min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:var(--foil);color:var(--night);font:600 10.500px/17px var(--sans);text-align:center}
 
 /* ---------- hero banner (image) ---------- */
-.diwali-hero{position:relative;width:100%;overflow:hidden;background:#35101f;border-bottom:1px solid var(--gold)}
+.diwali-hero{display:flex;justify-content:center;width:100%;background:#3d0a12;border-bottom:1px solid var(--gold)}
+.diwali-hero .frame{position:relative;width:100%;max-width:1040px;overflow:hidden}
 .diwali-hero img{display:block;width:100%;height:auto}
 .diwali-hero canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+/* wide screens: keep the banner a sensible height and melt its edges into the page */
+@media(min-width:1041px){.diwali-hero .frame{-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)}}
 /* phones: the banner is very wide, so enlarge it and crop the sides to keep the headline readable */
 @media(max-width:700px){.diwali-hero img{width:174%;max-width:none;margin-left:-37%}}
 #hint{display:block;margin:0;padding:9px 16px;text-align:center;font-size:13px;font-weight:500;letter-spacing:.08em;background:var(--foil);color:var(--night)}
@@ -174,8 +177,10 @@ label{display:block;font-weight:500;margin:14px 0 4px;letter-spacing:.02em}
 </header>
 
 <div class="diwali-hero">
-  <img src="banner.jpg?v=2" alt="Make This Diwali Brilliant — Shivakashi Crackers, up to 95% off">
-  <canvas id="fx" aria-hidden="true"></canvas>
+  <div class="frame">
+    <img src="banner.jpg?v=2" alt="Make This Diwali Brilliant — Shivakashi Crackers, up to 95% off">
+    <canvas id="fx" aria-hidden="true"></canvas>
+  </div>
 </div>
 <div id="hint" aria-live="polite"></div>
 
