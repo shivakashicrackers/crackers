@@ -184,7 +184,7 @@ label{display:block;font-weight:500;margin:14px 0 4px;letter-spacing:.02em}
 </div>
 <div id="hint" aria-live="polite"></div>
 
-<div class="notice"><p>We facilitate bulk orders to secure better pricing. End-to-end service is handled by the provider, while we take responsibility for ensuring your order is delivered safely and on time to your doorstep.</p></div>
+<div class="notice"><p><strong>Delivery available only in Bangalore.</strong> We facilitate bulk orders to secure better pricing. End-to-end service is handled by the provider, while we take responsibility for ensuring your order is delivered safely and on time to your doorstep.</p></div>
 
 <main class="wrap">
   <!-- Page 1: products -->
@@ -228,6 +228,13 @@ label{display:block;font-weight:500;margin:14px 0 4px;letter-spacing:.02em}
       <input class="f" id="phone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel" placeholder="10-digit mobile number">
       <label for="addr">Address</label>
       <textarea class="f" id="addr" rows="3" autocomplete="street-address"></textarea>
+      <label for="city">City</label>
+      <select class="f" id="city" autocomplete="address-level2"><option value="Bengaluru" selected>Bengaluru (Bangalore)</option></select>
+      <label for="state">State</label>
+      <select class="f" id="state" autocomplete="address-level1"><option value="Karnataka" selected>Karnataka</option></select>
+      <label for="pin">Pincode</label>
+      <input class="f" id="pin" type="tel" inputmode="numeric" maxlength="6" autocomplete="postal-code" placeholder="6-digit Bangalore pincode (560xxx)">
+      <p class="note" style="margin-top:6px">We deliver only within Bangalore.</p>
       <label class="adv" for="adv"><input type="checkbox" id="adv"><span>I agree to pay a 10% advance<span class="pcol"> (<span id="advAmt"></span>)</span> to confirm my order.<small>This is only an acknowledgement. Our team will call you with payment details.</small></span></label>
       <label class="adv" for="adv2"><input type="checkbox" id="adv2"><span>I will share the advance payment screenshot in the group.<small>Please share the advance payment screenshot in the group after you pay. Your order is confirmed only after we receive it.</small></span></label>
       <div class="err" id="err" role="alert"></div>
@@ -454,14 +461,19 @@ function sumQty(id, v){
 $("rows").addEventListener("click", e => { const b = e.target.closest("button"); if (b) sumQty(b.dataset.id, (cart[b.dataset.id] || 0) + +b.dataset.d); });
 $("rows").addEventListener("change", e => { if (e.target.dataset.id) sumQty(e.target.dataset.id, e.target.value); });
 $("back").onclick = () => show("shop");
-$("again").onclick = () => { for (const k in cart) cart[k] = 0; renderGrid(); updateBar(); ["name","phone","addr"].forEach(i => $(i).value = ""); $("adv").checked = false; show("shop"); };
+$("again").onclick = () => { for (const k in cart) cart[k] = 0; renderGrid(); updateBar(); ["name","phone","addr","pin"].forEach(i => $(i).value = ""); $("adv").checked = false; show("shop"); };
+
+// Bangalore Urban pincodes: 560001 to 560103. Add more (e.g. outskirts) here if you deliver there.
+function isBangalorePin(pin){ return /^560(00[1-9]|0[1-9]\d|10[0-3])$/.test(pin); }
 
 $("submit").onclick = async () => {
   const name = $("name").value.trim(), phone = $("phone").value.trim(), addr = $("addr").value.trim();
+  const city = $("city").value, state = $("state").value, pin = $("pin").value.trim();
   if (totals().pay < MIN_ORDER) return $("err").textContent = "Minimum order value is " + rs(MIN_ORDER) + ". Please add more items.";
   if (!name) return $("err").textContent = "Enter your name.";
   if (!/^[6-9]\d{9}$/.test(phone)) return $("err").textContent = "Enter a valid 10-digit mobile number.";
   if (addr.length < 8) return $("err").textContent = "Enter your full delivery address.";
+  if (!isBangalorePin(pin)) return $("err").textContent = "Sorry, we deliver only within Bangalore. Enter a valid Bangalore pincode (560001 to 560103).";
   if (!$("adv").checked) return $("err").textContent = "Please tick the 10% advance payment box to place the order.";
   if (!$("adv2").checked) return $("err").textContent = "Please tick the box to confirm you will share the advance payment screenshot in the group.";
 
@@ -469,7 +481,7 @@ $("submit").onclick = async () => {
   const order = {
     orderId: "SC" + Date.now().toString().slice(-8),
     time: new Date().toLocaleString("en-IN"),
-    name, phone, address: addr,
+    name, phone, address: addr + ", " + city + ", " + state + " - " + pin, city, state, pincode: pin,
     items: items().map(p => `${label(p)} [${p.id}] x ${cart[p.id]} @ ${p.price}`).join("\n"),
     total: t.pay, saved: t.save, advance: Math.round(t.pay * 0.1), offer: "Up to 95% off"
   };
