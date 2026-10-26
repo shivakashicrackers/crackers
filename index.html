@@ -150,6 +150,11 @@ label{display:block;font-weight:500;margin:14px 0 4px;letter-spacing:.02em}
 .adv input{width:22px;height:22px;margin-top:2px;flex:none;accent-color:var(--wine)}
 .adv small{display:block;font-weight:300;color:var(--mute);margin-top:2px}
 .noprice .price,.noprice .pcol{display:none!important}
+.lv{position:fixed;inset:0;background:rgba(20,4,10,.72);display:flex;align-items:center;justify-content:center;z-index:20;padding:18px}
+.lv .card{background:var(--paper);border:1px solid var(--gold);border-radius:4px;padding:22px 20px;max-width:380px;width:100%;box-shadow:0 20px 50px -20px rgba(0,0,0,.6);text-align:center}
+.lv h3{font-size:26px;color:var(--wine);margin:0 0 8px}
+.lv p{margin:0 0 18px;color:var(--ink);line-height:1.5;font-size:15px}
+.lv .btns{display:flex;flex-direction:column;gap:10px}
 </style>
 </head>
 <body>
@@ -266,6 +271,17 @@ label{display:block;font-weight:500;margin:14px 0 4px;letter-spacing:.02em}
   <button class="btn" id="review" disabled>Review order</button>
 </div></div>
 
+<div class="lv hide" id="leave" role="dialog" aria-modal="true" aria-labelledby="leaveT">
+  <div class="card">
+    <h3 id="leaveT">Leave this page?</h3>
+    <p>Your cart and delivery details will be lost if you go back or refresh. Do you want to continue with your order?</p>
+    <div class="btns">
+      <button class="btn" id="leaveStay">Stay and continue</button>
+      <button class="btn ghost" id="leaveGo">Yes, leave</button>
+    </div>
+  </div>
+</div>
+
 <div class="lb hide" id="lb"><img alt=""><p>Product may vary from the image shown</p></div>
 
 <script src="config.js"></script>
@@ -278,6 +294,7 @@ const MIN_ORDER = 0;   // minimum order value in rupees (checked on the review p
 document.body.classList.toggle("noprice", !SHOW_PRICES);
 let PRODUCTS = [];
 const cart = {};
+let curPage = "shop";
 const $ = id => document.getElementById(id);
 const rs = n => "₹" + n.toLocaleString("en-IN");
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -424,6 +441,7 @@ $("lb").onclick = () => $("lb").classList.add("hide");
 document.addEventListener("keydown", e => { if (e.key === "Escape") $("lb").classList.add("hide"); });
 
 function show(page){
+  curPage = page;
   ["shop","summary","done"].forEach(s => $(s).classList.toggle("hide", s !== page));
   $("bar").classList.toggle("hide", page !== "shop");
   window.scrollTo(0, 0);
@@ -570,6 +588,36 @@ $("searchBtn").onclick = () => { toShop(); $("search").scrollIntoView({block:"ce
 $("cartBtn").onclick = () => { if (!$("review").disabled) $("review").click(); else { toShop(); $("layout").scrollIntoView(); } };
 
 updateBar(); load();
+
+/* ---- leave / refresh protection ----
+   Refresh or closing the tab shows the browser's own "Leave site?" box.
+   The browser Back button shows our own pop-up instead of leaving straight away. */
+let allowLeave = false, guardOn = false;
+const atRisk = () => curPage !== "done" && items().length > 0;
+
+window.addEventListener("beforeunload", e => {
+  if (allowLeave || !atRisk()) return;
+  e.preventDefault(); e.returnValue = "";
+});
+
+function addGuard(){
+  if (guardOn) return;
+  history.pushState({guard:1}, "", location.href);
+  guardOn = true;
+}
+["pointerdown","keydown"].forEach(ev => document.addEventListener(ev, addGuard, {once:true, passive:true}));
+
+window.addEventListener("popstate", () => {
+  if (!guardOn) return;
+  guardOn = false;
+  if (atRisk()) $("leave").classList.remove("hide");
+  else { allowLeave = true; history.back(); }
+});
+
+$("leaveStay").onclick = () => { $("leave").classList.add("hide"); addGuard(); };
+$("leaveGo").onclick = () => { allowLeave = true; $("leave").classList.add("hide"); history.back(); };
+$("leave").addEventListener("click", e => { if (e.target === $("leave")) $("leaveStay").click(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("leave").classList.contains("hide")) $("leaveStay").click(); });
 </script>
 </body>
 </html>
